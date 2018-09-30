@@ -11,6 +11,9 @@ http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/
 http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd">
     <http:listener-config name="HTTP_Listener_Configuration" host="0.0.0.0" port="8081" doc:name="HTTP Listener Configuration"/>
     <db:mysql-config name="MySQL_Configuration" host="localhost" port="3306" user="root" password="1234" database="cmp" doc:name="MySQL Configuration"/>
+    <ee:object-store-caching-strategy name="Caching_Strategy" doc:name="Caching Strategy" keyGenerationExpression="#[flowVars.id]">
+        <in-memory-store name="inMemooryStore" maxEntries="200" entryTTL="20000" expirationInterval="20000"/>
+    </ee:object-store-caching-strategy>
     <flow name="pcacheFlow">
         <http:listener config-ref="HTTP_Listener_Configuration" path="/cache" doc:name="HTTP"/>
         <byte-array-to-string-transformer doc:name="Byte Array to String"/>
