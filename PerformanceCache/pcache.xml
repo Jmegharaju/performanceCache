@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd">
+    <http:listener-config name="HTTP_Listener_Configuration" host="0.0.0.0" port="8081" doc:name="HTTP Listener Configuration"/>
+    <db:mysql-config name="MySQL_Configuration" host="localhost" port="3306" user="root" password="1234" database="cmp" doc:name="MySQL Configuration"/>
+    <flow name="pcacheFlow">
+        <http:listener config-ref="HTTP_Listener_Configuration" path="/cache" doc:name="HTTP"/>
+        <byte-array-to-string-transformer doc:name="Byte Array to String"/>
+        <set-variable variableName="id" value="#[message.inboundProperties.'http.query.params'.id]" doc:name="Variable"/>
+        <logger message="#[flowVars.id]" level="INFO" doc:name="Logger"/>
+        <ee:cache doc:name="Cache">
+            <logger message="&quot;Before call database connector&quot;" level="INFO" doc:name="Logger"/>
+            <db:select config-ref="MySQL_Configuration" doc:name="Database">
+                <db:dynamic-query><![CDATA[Select id,name from emp where id='#[flowVars.id]';]]></db:dynamic-query>
+            </db:select>
+            <logger message="&quot;After calling the database&quot;" level="INFO" doc:name="Logger"/>
+        </ee:cache>
+        <dw:transform-message doc:name="Transform Message">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+payload map ((payload01, indexOfPayload01)->
+	{
+		"id": payload01.id,
+		"name": payload01.name
+	}
+)]]></dw:set-payload>
+        </dw:transform-message>
+        <logger message="#[payload]" level="INFO" doc:name="Logger"/>
+    </flow>
+</mule>
